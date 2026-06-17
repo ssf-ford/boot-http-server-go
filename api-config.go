@@ -7,9 +7,15 @@ import (
 )
 
 func (c *apiConfig) handlerMetrics(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	htmlTemplate := `<html>
+<body>
+    <h1>Welcome, Chirpy Admin</h1>
+    <p>Chirpy has been visited %d times!</p>
+  </body>
+</html>`
+	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "Hits: %d\n", c.fileServerHits.Load())
+	fmt.Fprintf(w, htmlTemplate, c.fileServerHits.Load())
 }
 
 func (c *apiConfig) handlerMetricsReset(w http.ResponseWriter, r *http.Request) {
