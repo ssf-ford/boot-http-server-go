@@ -3,18 +3,22 @@ package main
 import (
 	"log"
 	"net/http"
+	"sync/atomic"
 )
 
 func main() {
 	filePathRoot := "."
 	port := "8080"
-	apiCfg := &apiConfig{}
+	apiCfg := &apiConfig{
+		fileServerHits: atomic.Int32{},
+	}
 
 	mux := http.NewServeMux()
 	mux.Handle("GET /app/", http.StripPrefix("/app", apiCfg.middlewareMetricsInc(http.FileServer(http.Dir(filePathRoot)))))
-	mux.HandleFunc("GET /healthz", handlerHealthz)
-	mux.HandleFunc("GET /metrics", apiCfg.handlerMetrics)
-	mux.HandleFunc("POST /reset", apiCfg.handlerMetricsReset)
+	mux.HandleFunc("GET /api/healthz", handlerHealthz)
+	mux.HandleFunc("GET /admin/metrics", apiCfg.handlerMetrics)
+	mux.HandleFunc("POST /admin/reset", apiCfg.handlerMetricsReset)
+	mux.HandleFunc("POST /api/validate_chirp", handlerValidateChirp)
 
 	server := &http.Server{
 		Addr:    ":" + port,
