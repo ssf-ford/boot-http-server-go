@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 	"sync/atomic"
+
+	"santnas/boot-http-server-course/internal/database"
 )
 
 func (c *apiConfig) handlerMetrics(w http.ResponseWriter, r *http.Request) {
@@ -28,6 +30,7 @@ func (c *apiConfig) handlerMetricsReset(w http.ResponseWriter, r *http.Request) 
 
 type apiConfig struct {
 	fileServerHits atomic.Int32
+	db             *database.Queries
 }
 
 func (c *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
