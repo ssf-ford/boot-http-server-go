@@ -3,8 +3,10 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"sync/atomic"
 
+	"github.com/joho/godotenv"
 	"santnas/boot-http-server-course/internal/database"
 )
 
@@ -21,6 +23,19 @@ func (c *apiConfig) handlerMetrics(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *apiConfig) handlerMetricsReset(w http.ResponseWriter, r *http.Request) {
+	godotenv.Load()
+	platform := os.Getenv("PLATFORM")
+	if platform != "dev" {
+		respondWithError(w, http.StatusForbidden, "Forbidden", nil)
+		return
+	}
+
+	err := c.db.DeleteAllUsers(r.Context())
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Internal Server Error", err)
+		return
+	}
+
 	c.fileServerHits.Store(0)
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
