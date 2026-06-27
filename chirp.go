@@ -5,32 +5,55 @@ import (
 	"net/http"
 	"slices"
 	"strings"
+
+	"github.com/google/uuid"
+	"santnas/boot-http-server-course/internal/database"
 )
 
-func handlerValidateChirp(w http.ResponseWriter, r *http.Request) {
+func (c *apiConfig) handlerCreateChirp(w http.ResponseWriter, r *http.Request) {
 	type chirpRequest struct {
-		Body string `json:"body"`
+		Body   string    `json:"body"`
+		UserID uuid.UUID `json:"user_id"`
 	}
 	type returnVals struct {
-		CleanedBody string `json:"cleaned_body"`
+		ID        string `json:"id"`
+		CreatedAt string `json:"created_at"`
+		UpdatedAt string `json:"updated_at"`
+		UserID    string `json:"user_id"`
+		Body      string `json:"body"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
-	chirp := chirpRequest{}
-	err := decoder.Decode(&chirp)
+	chirpReq := chirpRequest{}
+	err := decoder.Decode(&chirpReq)
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, "Couldn't decode parameters", err)
 		return
 	}
 
 	const maxChirpLength = 140
-	if len(chirp.Body) > maxChirpLength {
+	if len(chirpReq.Body) > maxChirpLength {
 		respondWithError(w, http.StatusBadRequest, "Chirp is too long", nil)
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, returnVals{
-		CleanedBody: sanitizeBody(chirp.Body),
+	chripParams := database.CreateChirpParams{
+		Message: chirpReq.Body,
+		UserID:  chirpReq.UserID,
+	}
+
+	chirp, err := c.db.CreateChirp(r.Context(), chripParams)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Couldn't create chirp", err)
+		return
+	}
+
+	respondWithJSON(w, http.StatusCreated, returnVals{
+		ID:        chirp.ID.String(),
+		CreatedAt: chirp.CreatedAt.String(),
+		UpdatedAt: chirp.UpdatedAt.String(),
+		UserID:    chirp.UserID.String(),
+		Body:      sanitizeBody(chirp.Message),
 	})
 }
 
