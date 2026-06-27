@@ -39,6 +39,28 @@ func (c *apiConfig) handlerListChirps(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, chirpsResult)
 }
 
+func (c *apiConfig) handlerGetChirp(w http.ResponseWriter, r *http.Request) {
+	chirpID, err := uuid.Parse(r.PathValue("chirpID"))
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Couldn't parse chirp ID", err)
+		return
+	}
+
+	chirp, err := c.db.GetChirp(r.Context(), chirpID)
+	if err != nil {
+		//respondWithError(w, http.StatusInternalServerError, "Couldn't get chirp", err)
+		respondWithError(w, http.StatusNotFound, "Chirp not found", err)
+		return
+	}
+	respondWithJSON(w, http.StatusOK, ChirpResult{
+		ID:        chirp.ID.String(),
+		CreatedAt: chirp.CreatedAt.String(),
+		UpdatedAt: chirp.UpdatedAt.String(),
+		UserID:    chirp.UserID.String(),
+		Body:      sanitizeBody(chirp.Message),
+	})
+}
+
 func (c *apiConfig) handlerCreateChirp(w http.ResponseWriter, r *http.Request) {
 	type chirpRequest struct {
 		Body   string    `json:"body"`
