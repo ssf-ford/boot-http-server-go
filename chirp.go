@@ -10,17 +10,39 @@ import (
 	"santnas/boot-http-server-course/internal/database"
 )
 
+type ChirpResult struct {
+	ID        string `json:"id"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
+	UserID    string `json:"user_id"`
+	Body      string `json:"body"`
+}
+
+func (c *apiConfig) handlerListChirps(w http.ResponseWriter, r *http.Request) {
+	chirps, err := c.db.ListChirps(r.Context())
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Couldn't list chirps", err)
+		return
+	}
+
+	var chirpsResult []ChirpResult
+	for _, chirp := range chirps {
+		chirpsResult = append(chirpsResult, ChirpResult{
+			ID:        chirp.ID.String(),
+			CreatedAt: chirp.CreatedAt.String(),
+			UpdatedAt: chirp.UpdatedAt.String(),
+			UserID:    chirp.UserID.String(),
+			Body:      sanitizeBody(chirp.Message),
+		})
+	}
+
+	respondWithJSON(w, http.StatusOK, chirpsResult)
+}
+
 func (c *apiConfig) handlerCreateChirp(w http.ResponseWriter, r *http.Request) {
 	type chirpRequest struct {
 		Body   string    `json:"body"`
 		UserID uuid.UUID `json:"user_id"`
-	}
-	type returnVals struct {
-		ID        string `json:"id"`
-		CreatedAt string `json:"created_at"`
-		UpdatedAt string `json:"updated_at"`
-		UserID    string `json:"user_id"`
-		Body      string `json:"body"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -48,7 +70,7 @@ func (c *apiConfig) handlerCreateChirp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondWithJSON(w, http.StatusCreated, returnVals{
+	respondWithJSON(w, http.StatusCreated, ChirpResult{
 		ID:        chirp.ID.String(),
 		CreatedAt: chirp.CreatedAt.String(),
 		UpdatedAt: chirp.UpdatedAt.String(),
